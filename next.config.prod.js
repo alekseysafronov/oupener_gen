@@ -4,8 +4,9 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  basePath: '',
-  assetPrefix: '',
+  basePath: '/oupener_gen',
+  assetPrefix: '/oupener_gen/',
+  trailingSlash: true,
 };
 
 module.exports = nextConfig; 

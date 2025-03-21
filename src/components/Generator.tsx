@@ -1,16 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { OpeningLine } from '../types/types';
+import type { OpeningLine, GeneratorSettings as GeneratorSettingsType } from '../types/types';
 import { openingLines } from '../data/openingLines';
 import SavedPhrases from './SavedPhrases';
+import GeneratorSettings from './GeneratorSettings';
 
-const Generator = () => {
+const Generator: React.FC = () => {
   const [currentPhrase, setCurrentPhrase] = useState<OpeningLine | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(false);
   const [savedPhrases, setSavedPhrases] = useState<OpeningLine[]>([]);
   const [showCopyNotification, setShowCopyNotification] = useState(false);
+  const [settings, setSettings] = useState<GeneratorSettingsType>({
+    gender: 'any',
+    ageRange: 'any',
+    userGender: 'any'
+  });
 
   const categories = ['all', 'funny', 'romantic', 'casual', 'creative'];
 
@@ -24,12 +30,35 @@ const Generator = () => {
   const handleGenerate = () => {
     setIsLoading(true);
     setTimeout(() => {
-      const filteredLines = selectedCategory === 'all'
-        ? openingLines
-        : openingLines.filter(line => line.category === selectedCategory);
+      let filteredLines = openingLines;
+
+      // Фильтрация по категории
+      if (selectedCategory !== 'all') {
+        filteredLines = filteredLines.filter(line => line.category === selectedCategory);
+      }
+
+      // Фильтрация по полу
+      filteredLines = filteredLines.filter(line => 
+        line.gender === 'any' || line.gender === settings.gender
+      );
+
+      // Фильтрация по возрасту
+      filteredLines = filteredLines.filter(line => 
+        line.ageRange === 'any' || line.ageRange === settings.ageRange
+      );
+
+      if (filteredLines.length > 0) {
+        const randomIndex = Math.floor(Math.random() * filteredLines.length);
+        setCurrentPhrase(filteredLines[randomIndex]);
+      } else {
+        // Если нет подходящих фраз, используем общие фразы
+        const fallbackLines = openingLines.filter(line => 
+          line.gender === 'any' && line.ageRange === 'any'
+        );
+        const randomIndex = Math.floor(Math.random() * fallbackLines.length);
+        setCurrentPhrase(fallbackLines[randomIndex]);
+      }
       
-      const randomIndex = Math.floor(Math.random() * filteredLines.length);
-      setCurrentPhrase(filteredLines[randomIndex]);
       setIsLoading(false);
     }, 500);
   };
@@ -60,6 +89,14 @@ const Generator = () => {
     localStorage.setItem('savedPhrases', JSON.stringify(updatedPhrases));
   };
 
+  const filterPhrases = (phrases: OpeningLine[], settings: GeneratorSettings): OpeningLine[] => {
+    return phrases.filter(phrase => 
+      (phrase.gender === 'any' || phrase.gender === settings.gender) &&
+      (phrase.ageRange === 'any' || phrase.ageRange === settings.ageRange) &&
+      (phrase.userGender === 'any' || phrase.userGender === settings.userGender)
+    );
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
       <div className="space-y-8">
@@ -68,9 +105,14 @@ const Generator = () => {
             Генератор фраз для знакомства
           </h2>
           <p className="text-center text-gray-600">
-            Выберите категорию и нажмите кнопку для генерации фразы
+            Настройте параметры и нажмите кнопку для генерации фразы
           </p>
         </div>
+
+        <GeneratorSettings
+          settings={settings}
+          onSettingsChange={setSettings}
+        />
 
         <div className="flex flex-wrap justify-center gap-2">
           {categories.map((category) => (
