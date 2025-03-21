@@ -6,6 +6,7 @@ const nextConfig = {
   },
   basePath: '/oupener_gen',
   assetPrefix: '/oupener_gen/',
+  trailingSlash: true,
 };
 
 module.exports = nextConfig; 
